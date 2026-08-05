@@ -11,21 +11,22 @@ sale_item
 sale
 supplier 
 
-ENTITY	    ENTITY	    RELATIONSHIP    	EXPLANATION
 
-product	    supplier	  Many to many	    "One supplier can supply many different products
+Relationship between entities
+
+product	 and   supplier	 have  Many to many	 because   "One supplier can supply many different products
                                            Many suppliers can supply the same product but different brands"
                                            
-product	   category	    One to one	       A product can only be classified in a single category but a category can have many products.
+product	 and  category	 have   One to one	 because      A product can only be classified in a single category but a category can have many products.
 
-product	   sale	        one to many	       One sale can have one or more products
+product	and   sale	   have     one to many	 because       One sale can have one or more products
 
-customer	 user	        One to many	       One user can interact with many customers
+customer and	 user	     have   One to many	    because   One user can interact with many customers
 
-customer	 payment	     One to many	      One customer can make many payments
+customer	and payment	  have   One to many	 because     One customer can make many payments
 
-sale_item	 payment	   One to one	          One item is paid for only once
+sale_item	and payment	have   One to one	    because      One item is paid for only once
 
-payment  	receipt    	 One to one	           One payment has one receipt
+payment  and	receipt  have  	 One to one	 because          One payment has one receipt
 
-sale	    sale_item	   One to many	         One sale contains one or more sale_items
+sale	 and   sale_item	 have  One to many	 because        One sale contains one or more sale_items
