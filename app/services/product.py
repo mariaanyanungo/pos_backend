@@ -13,8 +13,8 @@ def get_product(db:Session, product_id:uuid.UUID):
             status.HTTP_404_NOT_FOUND, detail="Product not found"
         )
 
-def list_products(db:Session, data:ProductRead=None):
-    return ProductRepository.get_all(db,data)
+def list_products(data, db:Session):
+    return ProductRepository.get_all(db, data.model_dump())
 
 def create_product(db: Session, data:ProductCreate):
     return ProductRepository.create(db, data.model_dump())

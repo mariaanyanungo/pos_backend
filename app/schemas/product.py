@@ -22,7 +22,8 @@ class ProductUpdate(ProductBase):
     supplier_id:uuid.UUID|None=None
     is_active:bool|None=None
 
-class ProductRead(ProductBase):
+class ProductRead(BaseModel):
+    
     model_config=ConfigDict(from_attributes=True)
 
     product_id:uuid.UUID

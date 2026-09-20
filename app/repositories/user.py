@@ -6,14 +6,18 @@ class userRepository:
     def __init__(self):
         self.model=User
 
-    def get(self,db:Session, id:int):
-        return db.get(User, id)
+    def get_by_id(self,db:Session, user_id:int):
+        return db.query(User).filter(User.user_id==user_id).first()
+    
+    
+    def get_by_username(self,db:Session, username:str):
+        return db.get(User, username)
 
     def get_all(self,db:Session):
         return db.query(User).all()
 
     def create(self,db:Session, data:dict):
-        user=user(**data)
+        user=user(**data)                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
         db.add(user)
         db.commit()
         db.refresh(user)

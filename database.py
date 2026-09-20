@@ -1,41 +1,47 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException
-
 import os
+
+from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL","postgresql://postgres:postgres@localhost:5432/pos_db")
 
-print(f"\n CRITICAL: FastAPI is connecting to database string: {DATABASE_URL}\n")
+def get_database_url() -> str:
+    url = (os.getenv("DATABASE_URL") or "").strip()
+    if not url:
+        raise ValueError("DATABASE_URL is missing. Add it to your .env file.")
+    return url
 
 
-if not DATABASE_URL:
-    raise ValueError("CRITICAL CONFIG ERROR: 'DATABASE_URL' is missing from your .env file!")
+def build_engine(url: str) -> Engine:
+    kwargs: dict = {"echo": False}
+    if url.startswith("sqlite"):
+        kwargs["connect_args"] = {"check_same_thread": False}
+        if url in ("sqlite://", "sqlite:///:memory:"):
+            kwargs["poolclass"] = StaticPool
+    else:
+        kwargs["pool_pre_ping"] = True
+    return create_engine(url, **kwargs)
 
 
-engine=create_engine(DATABASE_URL, echo=False, future=True)
+DATABASE_URL = get_database_url()
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = build_engine(DATABASE_URL)
+
+
+SessionLocal = sessionmaker(autoflush=False, bind=engine)
 Base = declarative_base()
 
+
 def get_db():
-    db=SessionLocal()
+    db = SessionLocal()
     try:
         yield db
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()
-        
-        
-        
-        
-        
-
-
-
-
-
-
-
