@@ -51,27 +51,27 @@ class LineResult:
     quantity: int
     unit_price: Decimal
     modifiers_total: Decimal
-    gross: Decimal  # unit_price * quantity + modifiers, before any discount
+    gross: Decimal
     line_discount: Decimal
     cart_discount_share: Decimal
-    discounted: Decimal  # amount after all discounts, before exclusive tax
+    discounted: Decimal  
     tax_rate: Decimal
     tax_mode: TaxMode
     tax: Decimal
-    total: Decimal  # what the customer pays for this line
+    total: Decimal 
 
 
 @dataclass(frozen=True)
 class TaxBreakdownEntry:
     rate: Decimal
-    taxable: Decimal  # amount excluding tax
+    taxable: Decimal  
     tax: Decimal
 
 
 @dataclass(frozen=True)
 class CartResult:
     lines: tuple[LineResult, ...]
-    subtotal: Decimal  # sum of line gross amounts
+    subtotal: Decimal 
     line_discount_total: Decimal
     cart_discount_total: Decimal
     discount_total: Decimal

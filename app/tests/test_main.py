@@ -1,16 +1,14 @@
-from fastapi.testclient import TestClient
-from main import app
+def test_home(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json() == {"message": "Welcome to POS API"}
 
-client=TestClient(app)
 
-def test_home():
-    response=client.get("/")
-    assert response.status_code==201
-    
-    
-    
-    
-    # print (response.json())
-    # print (response.status_code)
-    # print (response.headers)
-    
+def test_health(client):
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_unknown_route_returns_404(client):
+    assert client.get("/does-not-exist").status_code == 404

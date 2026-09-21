@@ -1,25 +1,25 @@
-from datetime import datetime
-from decimal import Decimal
-from pydantic import BaseModel, ConfigDict
 import uuid
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
 class CategoryBase(BaseModel):
-    name:str
-    category_id:uuid.UUID|None=None
-    Category_id:uuid.UUID|None=None
-    is_active:bool=True
+    name: str = Field(min_length=1, max_length=100)
+    is_active: bool = True
+
 
 class CategoryCreate(CategoryBase):
-    pass 
+    pass
 
-class CategoryUpdate(CategoryBase):
-    name:str|None=None
-    category_id:uuid.UUID|None=None
-    Category_id:uuid.UUID|None=None
-    is_active:bool|None=None
+
+class CategoryUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    is_active: bool | None = None
+
 
 class CategoryRead(CategoryBase):
-    model_config=ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
-    category_id:uuid.UUID
-    created_at:datetime
-
+    category_id: uuid.UUID
+    created_at: datetime

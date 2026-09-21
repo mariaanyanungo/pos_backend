@@ -1,38 +1,22 @@
-from app.models.receipt import Receipt
+
+import uuid
+
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-class receiptRepository:
-    
+from app.models.receipt import Receipt
+from app.repositories.base import BaseRepository
+
+
+class ReceiptRepository(BaseRepository[Receipt]):
     def __init__(self):
-        self.model=Receipt
+        super().__init__(Receipt)
 
-    def get(self,db:Session, id:int):
-        return db.get(Receipt, id)
+    def get_by_sale_id(self, db: Session, sale_id: uuid.UUID) -> Receipt | None:
+        return db.scalar(select(Receipt).where(Receipt.sale_id == sale_id))
 
-    def get_all(self,db:Session):
-        return db.query(Receipt).all()
-
-    def create(self,db:Session, data:dict):
-        receipt=receipt(**data)
-        db.add(receipt)
-        db.commit()
-        db.refresh(receipt)
-        return receipt
-
-    def update(self, db:Session, db_obj:Receipt, data:dict):
-        for field, value in data.items():
-            setattr(db_obj, field,value)
-            db.commit()
-            db.refresh(db_obj)
-            return db_obj
-
-    def delete(self, db:Session, db_obj:Receipt):
-        db.delete(db_obj)
-        db.commit()
-
-receipt_repository=receiptRepository()
+    def get_by_number(self, db: Session, receipt_number: str) -> Receipt | None:
+        return db.scalar(select(Receipt).where(Receipt.receipt_number == receipt_number))
 
 
-    
-
-
+receipt_repository = ReceiptRepository()

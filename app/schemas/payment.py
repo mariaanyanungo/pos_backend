@@ -1,30 +1,23 @@
+import uuid
 from datetime import datetime
 from decimal import Decimal
+
 from pydantic import BaseModel, ConfigDict
-import uuid
 
-class PaymentBase(BaseModel):
-    name:str
-    brand_name:str
-    category:Decimal
-    Payment_id:uuid.UUID|None=None
-    stock_quantity:uuid.UUID
-    is_active:bool=True
 
-class PaymentCreate(PaymentBase):
-    pass 
+class PaymentRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
 
-class PaymentUpdate(PaymentBase):
-    name:str|None=None
-    stock_quantity:uuid.UUID|None=None
-    brand_name:str|None=None
-    category:Decimal|None=None
-    category_id:uuid.UUID|None=None
-    is_active:bool|None=None
-
-class PaymentRead(PaymentBase):
-    model_config=ConfigDict(from_attributes=True)
-
-    payment_id:uuid.UUID
-    created_at:datetime
-
+    payment_id: uuid.UUID
+    sale_id: uuid.UUID
+    amount: Decimal
+    amount_tendered: Decimal | None
+    change_due: Decimal
+    payment_method: str
+    status: str
+    idempotency_key: str
+    gateway_reference: str | None
+    failure_reason: str | None
+    refunded_amount: Decimal
+    created_at: datetime
+    captured_at: datetime | None

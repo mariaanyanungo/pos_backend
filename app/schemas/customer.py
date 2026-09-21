@@ -1,28 +1,31 @@
-from datetime import datetime
-from decimal import Decimal
-from pydantic import BaseModel, ConfigDict
 import uuid
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.schemas.common import LowerEmail
+
 
 class CustomerBase(BaseModel):
-    name:str
-    email_address:str
-    customer_id:uuid.UUID|None=None
-    Customer_id:uuid.UUID|None=None
-    is_active:bool=True
+    name: str = Field(min_length=1, max_length=200)
+    email: LowerEmail | None = None
+    phone: str | None = Field(default=None, max_length=50)
+    is_active: bool = True
+
 
 class CustomerCreate(CustomerBase):
-    pass 
+    pass
 
-class CustomerUpdate(CustomerBase):
-    name:str|None=None
-    email_address:str|None=None
-    category_id:uuid.UUID|None=None
-    Customer_id:uuid.UUID|None=None
-    is_active:bool|None=None
+
+class CustomerUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    email: LowerEmail | None = None
+    phone: str | None = Field(default=None, max_length=50)
+    is_active: bool | None = None
+
 
 class CustomerRead(CustomerBase):
-    model_config=ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
-    customer_id:uuid.UUID
-    created_at:datetime
-
+    customer_id: uuid.UUID
+    created_at: datetime

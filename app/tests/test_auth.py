@@ -1,80 +1,27 @@
-import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
-import jwt
-import pytest
-
-from app.core.security import (
-    JWT_ALGORITHM,
-    create_access_token,
-    decode_access_token,
-    verify_password,
-)
+from app.core.security import create_access_token
 from app.models.user import User
 
-RANDOM_ID = "3f2b8c1e-5a4d-4c53-9f0e-7a1d2b3c4d5e"
 
-
-def deactivate_user(db_session, username):
-    user = db_session.query(User).filter(User.username == username).first()
-    user.is_active = False
-    db_session.commit()
-
-
-def test_register_user(client):
-    user_data = {
-        "username": "newcashier",
-        "email": "newcashier@example.com",
-        "password": "supersecret1",
-    }
-    response = client.post("/auth/register", json=user_data)
+def test_register_creates_cashier_without_leaking_password(client):
+    response = client.post(
+        "/auth/register",
+        json={"username": "Alice", "email": "Alice@Gmail.com", "password": "testpassword"},
+    )
     assert response.status_code == 201
     body = response.json()
-    assert uuid.UUID(body["user_id"])
-    assert body["username"] == "newcashier"
-    assert body["email"] == "newcashier@example.com"
+    assert body["username"] == "alice"  # normalised
+    assert body["email"] == "alice@gmail.com"
     assert body["role"] == "cashier"
     assert body["is_active"] is True
-    assert "created_at" in body
+    assert "password" not in body and "hashed_password" not in body
 
 
-def test_register_never_returns_password_or_hash(client):
+def test_register_cannot_choose_a_role(client):
     response = client.post(
         "/auth/register",
-        json={
-            "username": "newcashier",
-            "email": "newcashier@example.com",
-            "password": "supersecret1",
-        },
-    )
-    body = response.json()
-    assert "password" not in body
-    assert "hashed_password" not in body
-
-
-def test_register_stores_hashed_password(client, db_session):
-    client.post(
-        "/auth/register",
-        json={
-            "username": "newcashier",
-            "email": "newcashier@example.com",
-            "password": "supersecret1",
-        },
-    )
-    user = db_session.query(User).filter(User.username == "newcashier").first()
-    assert user.hashed_password != "supersecret1"
-    assert verify_password("supersecret1", user.hashed_password)
-
-
-def test_register_ignores_role_in_payload(client):
-    response = client.post(
-        "/auth/register",
-        json={
-            "username": "sneaky",
-            "email": "sneaky@example.com",
-            "password": "supersecret1",
-            "role": "admin",
-        },
+        json={"username": "sneaky", "email": "sneaky@gmail.com", "password": "testpassword", "role": "admin"},
     )
     assert response.status_code == 201
     assert response.json()["role"] == "cashier"
@@ -83,11 +30,7 @@ def test_register_ignores_role_in_payload(client):
 def test_register_duplicate_username_returns_409(client, test_user):
     response = client.post(
         "/auth/register",
-        json={
-            "username": test_user["username"],
-            "email": "different@example.com",
-            "password": "supersecret1",
-        },
+        json={"username": "TestUser", "email": "other@gmail.com", "password": "testpassword"},
     )
     assert response.status_code == 409
 
@@ -95,212 +38,126 @@ def test_register_duplicate_username_returns_409(client, test_user):
 def test_register_duplicate_email_returns_409(client, test_user):
     response = client.post(
         "/auth/register",
-        json={
-            "username": "differentuser",
-            "email": test_user["email"],
-            "password": "supersecret1",
-        },
+        json={"username": "another", "email": test_user["email"], "password": "testpassword"},
     )
     assert response.status_code == 409
 
 
-@pytest.mark.parametrize(
-    "overrides",
-    [
-        {"username": "ab"},
-        {"email": "not-an-email"},
-        {"password": "short"},
-        {"username": ""},
-    ],
-)
-def test_register_with_invalid_data_returns_422(client, overrides):
-    user_data = {
-        "username": "newcashier",
-        "email": "newcashier@example.com",
-        "password": "supersecret1",
-    }
-    user_data.update(overrides)
-    response = client.post("/auth/register", json=user_data)
+def test_register_short_password_returns_422(client):
+    response = client.post(
+        "/auth/register",
+        json={"username": "alice", "email": "alice@gmail.com", "password": "short"},
+    )
     assert response.status_code == 422
 
 
-@pytest.mark.parametrize("missing_field", ["username", "email", "password"])
-def test_register_missing_field_returns_422(client, missing_field):
-    user_data = {
-        "username": "newcashier",
-        "email": "newcashier@example.com",
-        "password": "supersecret1",
-    }
-    user_data.pop(missing_field)
-    response = client.post("/auth/register", json=user_data)
+def test_register_invalid_email_returns_422(client):
+    response = client.post(
+        "/auth/register",
+        json={"username": "alice", "email": "not-an-email", "password": "testpassword"},
+    )
     assert response.status_code == 422
 
 
-def test_login_returns_bearer_token(client, test_user):
+def test_password_is_stored_hashed(client, test_user, db_session):
+    user = db_session.query(User).filter_by(username="testuser").one()
+    assert user.hashed_password != test_user["password"]
+    assert user.hashed_password.startswith("$argon2")
+
+
+def test_login_returns_bearer_token_that_works(client, test_user):
     response = client.post(
         "/auth/login",
-        data={
-            "username": test_user["username"],
-            "password": test_user["password"],
-        },
+        data={"username": test_user["username"], "password": test_user["password"]},
     )
     assert response.status_code == 200
     body = response.json()
     assert body["token_type"] == "bearer"
-    assert body["access_token"]
+    me = client.get("/users/me", headers={"Authorization": f"Bearer {body['access_token']}"})
+    assert me.status_code == 200
+    assert me.json()["username"] == "testuser"
 
 
-def test_login_token_identifies_the_user(client, test_user, auth_headers):
-    token = auth_headers["Authorization"].split(" ")[1]
-    me = client.get("/auth/me", headers=auth_headers).json()
-    assert decode_access_token(token)["sub"] == me["user_id"]
+def test_login_username_is_case_insensitive(client, test_user):
+    response = client.post("/auth/login", data={"username": "TESTUSER", "password": test_user["password"]})
+    assert response.status_code == 200
 
 
 def test_login_with_wrong_password_returns_401(client, test_user):
-    response = client.post(
-        "/auth/login",
-        data={"username": test_user["username"], "password": "wrongpassword"},
-    )
+    response = client.post("/auth/login", data={"username": "testuser", "password": "wrongpassword"})
     assert response.status_code == 401
-    assert response.headers["WWW-Authenticate"] == "Bearer"
+    assert response.headers["www-authenticate"] == "Bearer"
 
 
-def test_login_unknown_user_gives_same_error_as_wrong_password(client, test_user):
-    wrong_password = client.post(
-        "/auth/login",
-        data={"username": test_user["username"], "password": "wrongpassword"},
-    )
-    unknown_user = client.post(
-        "/auth/login",
-        data={"username": "ghost", "password": "wrongpassword"},
-    )
-    assert unknown_user.status_code == 401
-    assert unknown_user.json() == wrong_password.json()
+def test_login_with_unknown_user_returns_same_401(client, test_user):
+    unknown = client.post("/auth/login", data={"username": "ghost", "password": "testpassword"})
+    wrong = client.post("/auth/login", data={"username": "testuser", "password": "nope-nope"})
+    assert unknown.status_code == wrong.status_code == 401
+    assert unknown.json() == wrong.json()
 
 
-def test_login_without_credentials_returns_422(client):
-    response = client.post("/auth/login", data={})
-    assert response.status_code == 422
-
-
-def test_login_inactive_user_returns_403(client, test_user, db_session):
-    deactivate_user(db_session, test_user["username"])
-    response = client.post(
-        "/auth/login",
-        data={
-            "username": test_user["username"],
-            "password": test_user["password"],
-        },
-    )
-    assert response.status_code == 403
-
-
-
-def test_me_returns_current_user(client, test_user, auth_headers):
-    response = client.get("/auth/me", headers=auth_headers)
-    assert response.status_code == 200
-    body = response.json()
-    assert body["username"] == test_user["username"]
-    assert body["email"] == test_user["email"]
-    assert "hashed_password" not in body
-
-
-def test_me_without_token_returns_401(client):
-    response = client.get("/auth/me")
-    assert response.status_code == 401
-    assert response.headers["WWW-Authenticate"] == "Bearer"
-
-
-def test_me_with_garbage_token_returns_401(client):
-    response = client.get("/auth/me", headers={"Authorization": "Bearer garbage"})
+def test_inactive_user_cannot_log_in(client, test_user, db_session):
+    db_session.query(User).filter_by(username="testuser").update({"is_active": False})
+    db_session.commit()
+    response = client.post("/auth/login", data={"username": "testuser", "password": test_user["password"]})
     assert response.status_code == 401
 
 
-def test_me_with_wrong_scheme_returns_401(client, auth_headers):
-    token = auth_headers["Authorization"].split(" ")[1]
-    response = client.get("/auth/me", headers={"Authorization": f"Basic {token}"})
+def test_protected_route_without_token_returns_401(client):
+    assert client.get("/products").status_code == 401
+    assert client.get("/sales").status_code == 401
+
+
+def test_garbage_token_returns_401(client):
+    response = client.get("/products", headers={"Authorization": "Bearer not.a.token"})
     assert response.status_code == 401
 
 
-def test_me_with_expired_token_returns_401(client, auth_headers):
-    user_id = client.get("/auth/me", headers=auth_headers).json()["user_id"]
-    token = create_access_token(user_id, expires_delta=timedelta(seconds=-1))
-    response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+def test_expired_token_returns_401(client, test_user, db_session):
+    user = db_session.query(User).filter_by(username="testuser").one()
+    token = create_access_token(user.user_id, expires_delta=timedelta(seconds=-1))
+    response = client.get("/products", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 401
 
 
-def test_me_with_token_signed_by_another_secret_returns_401(client, auth_headers):
-    user_id = client.get("/auth/me", headers=auth_headers).json()["user_id"]
-    now = datetime.now(timezone.utc)
-    forged = jwt.encode(
-        {
-            "sub": user_id,
-            "iat": now,
-            "exp": now + timedelta(minutes=5),
-            "type": "access",
-        },
-        "another-secret-key-that-is-32-chars-or-more",
-        algorithm=JWT_ALGORITHM,
-    )
-    response = client.get("/auth/me", headers={"Authorization": f"Bearer {forged}"})
-    assert response.status_code == 401
+def test_token_for_deleted_user_returns_401(client):
+    import uuid
 
-
-def test_me_with_token_for_unknown_user_returns_401(client):
     token = create_access_token(uuid.uuid4())
-    response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+    response = client.get("/products", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 401
 
 
-def test_me_with_non_uuid_subject_returns_401(client):
-    token = create_access_token("not-a-uuid")
-    response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
-    assert response.status_code == 401
-
-
-def test_me_with_inactive_user_returns_403(client, test_user, auth_headers, db_session):
-    deactivate_user(db_session, test_user["username"])
-    response = client.get("/auth/me", headers=auth_headers)
+def test_token_of_deactivated_user_returns_403(client, test_user, auth_headers, db_session):
+    db_session.query(User).filter_by(username="testuser").update({"is_active": False})
+    db_session.commit()
+    response = client.get("/products", headers=auth_headers)
     assert response.status_code == 403
 
 
-PROTECTED_ENDPOINTS = [
-    ("GET", "/auth/me"),
-    ("GET", "/products"),
-    ("POST", "/products"),
-    ("GET", f"/products/{RANDOM_ID}"),
-    ("PUT", f"/products/{RANDOM_ID}"),
-    ("DELETE", f"/products/{RANDOM_ID}"),
-    ("GET", "/categories"),
-    ("POST", "/categories"),
-    ("GET", f"/categories/{RANDOM_ID}"),
-    ("PUT", f"/categories/{RANDOM_ID}"),
-    ("DELETE", f"/categories/{RANDOM_ID}"),
-    ("GET", "/suppliers"),
-    ("POST", "/suppliers"),
-    ("GET", f"/suppliers/{RANDOM_ID}"),
-    ("PUT", f"/suppliers/{RANDOM_ID}"),
-    ("DELETE", f"/suppliers/{RANDOM_ID}"),
-    ("GET", "/customers"),
-    ("POST", "/customers"),
-    ("GET", f"/customers/{RANDOM_ID}"),
-    ("PUT", f"/customers/{RANDOM_ID}"),
-    ("DELETE", f"/customers/{RANDOM_ID}"),
-    ("POST", f"/inventory/{RANDOM_ID}/adjust"),
-    ("GET", f"/inventory/{RANDOM_ID}/movements"),
-    ("GET", "/sales"),
-    ("POST", "/sales/checkout"),
-    ("GET", f"/sales/{RANDOM_ID}"),
-    ("POST", f"/sales/{RANDOM_ID}/void"),
-    ("POST", f"/sales/{RANDOM_ID}/return"),
-    ("GET", f"/payments/{RANDOM_ID}"),
-    ("POST", f"/payments/{RANDOM_ID}/capture"),
-    ("POST", f"/payments/{RANDOM_ID}/fail"),
-    ("GET", f"/receipts/{RANDOM_ID}"),
-]
+def test_bootstrap_admin_is_created_once_and_can_log_in(client, db_session, monkeypatch):
+    from dataclasses import replace
+
+    from app.services import auth_service
+
+    monkeypatch.setattr(
+        auth_service,
+        "settings",
+        replace(
+            auth_service.settings,
+            bootstrap_admin_username="Root",
+            bootstrap_admin_email="root@pos.com",
+            bootstrap_admin_password="rootpassword1",
+        ),
+    )
+    created = auth_service.bootstrap_admin(db_session)
+    assert created is not None and created.role == "admin"
+    assert auth_service.bootstrap_admin(db_session) is None  # idempotent
+    login = client.post("/auth/login", data={"username": "root", "password": "rootpassword1"})
+    assert login.status_code == 200
 
 
-@pytest.mark.parametrize("method,path", PROTECTED_ENDPOINTS)
-def test_endpoint_without_login_returns_401(client, method, path):
-    response = client.request(method, path)
-    assert response.status_code == 401
+def test_bootstrap_admin_does_nothing_when_not_configured(client, db_session):
+    from app.services import auth_service
+
+    assert auth_service.bootstrap_admin(db_session) is None

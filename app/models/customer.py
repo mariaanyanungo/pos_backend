@@ -1,30 +1,20 @@
-from sqlalchemy import(
-    Column,
-    Integer,
-    String, 
-    Boolean, 
-    ForeignKey,
-    DateTime,
-    ForeignKey  
-)
+import uuid
+
+from sqlalchemy import Boolean, Column, DateTime, String, Uuid
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from sqlalchemy.types import Numeric
-from sqlalchemy.dialects.postgresql import UUID
-
-
 
 from database import Base
+
 
 class Customer(Base):
     __tablename__ = "customers"
 
-    customer_id = Column(UUID(as_uuid=True), primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=True, index=True)
-    phone = Column(String, nullable=True)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.product_id"), nullable=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    customer_id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(200), nullable=False)
+    email = Column(String(255), unique=True, nullable=True, index=True)
+    phone = Column(String(50), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    product = relationship("Product", back_populates="customers")
+    sales = relationship("Sale", back_populates="customer")

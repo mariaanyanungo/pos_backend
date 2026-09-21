@@ -1,38 +1,50 @@
+
+
+import uuid
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
+
 from app.models.sale import Sale
-from sqlalchemy.orm import Session
+from app.repositories.base import BaseRepository
 
-class saleRepository:
-    
+
+class SaleRepository(BaseRepository[Sale]):
     def __init__(self):
-        self.model=Sale
+        super().__init__(Sale)
 
-    def get(self,db:Session, id:int):
-        return db.get(Sale, id)
+    def get_with_items(self, db: Session, sale_id: uuid.UUID) -> Sale | None:
+        stmt = select(Sale).options(selectinload(Sale.items)).where(Sale.sale_id == sale_id)
+        return db.scalar(stmt)
 
-    def get_all(self,db:Session):
-        return db.query(Sale).all()
+    def get_for_update(self, db: Session, sale_id: uuid.UUID) -> Sale | None:
+        """Row-locks the sale (SELECT ... FOR UPDATE on PostgreSQL) so checkout,
+        void, refund and cart edits on the same sale are serialised."""
+        stmt = (
+            select(Sale)
+            .options(selectinload(Sale.items))
+            .where(Sale.sale_id == sale_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        return db.scalar(stmt)
 
-    def create(self,db:Session, data:dict):
-        sale=sale(**data)
-        db.add(sale)
-        db.commit()
-        db.refresh(sale)
-        return sale
-
-    def update(self, db:Session, db_obj:Sale, data:dict):
-        for field, value in data.items():
-            setattr(db_obj, field,value)
-            db.commit()
-            db.refresh(db_obj)
-            return db_obj
-
-    def delete(self, db:Session, db_obj:Sale):
-        db.delete(db_obj)
-        db.commit()
-
-sale_repository=saleRepository()
+    def search(
+        self,
+        db: Session,
+        *,
+        cashier_id: uuid.UUID | None = None,
+        status: str | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[Sale]:
+        stmt = select(Sale).options(selectinload(Sale.items))
+        if cashier_id is not None:
+            stmt = stmt.where(Sale.cashier_id == cashier_id)
+        if status is not None:
+            stmt = stmt.where(Sale.status == status)
+        stmt = stmt.order_by(Sale.created_at.desc(), Sale.sale_id).offset(skip).limit(limit)
+        return list(db.scalars(stmt))
 
 
-    
-
-
+sale_repository = SaleRepository()

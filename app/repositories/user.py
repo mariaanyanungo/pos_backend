@@ -1,42 +1,29 @@
-from app.models.user import User
+
+
+import uuid
+
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-class userRepository:
-    
+from app.models.user import User
+from app.repositories.base import BaseRepository
+
+
+class UserRepository(BaseRepository[User]):
     def __init__(self):
-        self.model=User
+        super().__init__(User)
 
-    def get_by_id(self,db:Session, user_id:int):
-        return db.query(User).filter(User.user_id==user_id).first()
-    
-    
-    def get_by_username(self,db:Session, username:str):
-        return db.get(User, username)
+    def get_by_id(self, db: Session, user_id: uuid.UUID) -> User | None:
+        return db.get(User, user_id)
 
-    def get_all(self,db:Session):
-        return db.query(User).all()
+    def get_by_username(self, db: Session, username: str) -> User | None:
+        return db.scalar(select(User).where(User.username == username))
 
-    def create(self,db:Session, data:dict):
-        user=user(**data)                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        return user
+    def get_by_email(self, db: Session, email: str) -> User | None:
+        return db.scalar(select(User).where(User.email == email))
 
-    def update(self, db:Session, db_obj:User, data:dict):
-        for field, value in data.items():
-            setattr(db_obj, field,value)
-            db.commit()
-            db.refresh(db_obj)
-            return db_obj
-
-    def delete(self, db:Session, db_obj:User):
-        db.delete(db_obj)
-        db.commit()
-
-user_repository=userRepository()
+    def count(self, db: Session) -> int:
+        return db.scalar(select(func.count()).select_from(User)) or 0
 
 
-    
-
-
+user_repository = UserRepository()

@@ -1,39 +1,40 @@
 
-from app.models.payment import Payment
+import uuid
+from typing import Any
+
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-class paymentRepository:
-    
+from app.core.enums import PaymentStatus
+from app.models.payment import Payment
+from app.repositories.base import BaseRepository
+
+
+class PaymentRepository(BaseRepository[Payment]):
     def __init__(self):
-        self.model=Payment
+        super().__init__(Payment)
 
-    def get(self,db:Session, id:int):
-        return db.get(Payment, id)
+    def get_by_idempotency_key(self, db: Session, key: str) -> Payment | None:
+        return db.scalar(select(Payment).where(Payment.idempotency_key == key))
 
-    def get_all(self,db:Session):
-        return db.query(Payment).all()
+    def get_captured_for_sale(self, db: Session, sale_id: uuid.UUID) -> Payment | None:
+        stmt = select(Payment).where(
+            Payment.sale_id == sale_id,
+            Payment.status == PaymentStatus.CAPTURED.value,
+        )
+        return db.scalar(stmt)
 
-    def create(self,db:Session, data:dict):
-        payment=payment(**data)
-        db.add(payment)
-        db.commit()
-        db.refresh(payment)
-        return payment
-
-    def update(self, db:Session, db_obj:Payment, data:dict):
-        for field, value in data.items():
-            setattr(db_obj, field,value)
-            db.commit()
-            db.refresh(db_obj)
-            return db_obj
-
-    def delete(self, db:Session, db_obj:Payment):
-        db.delete(db_obj)
-        db.commit()
-
-payment_repository=paymentRepository()
+    def search(
+        self,
+        db: Session,
+        *,
+        sale_id: uuid.UUID | None = None,
+        status: str | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[Payment]:
+        filters: dict[str, Any] = {"sale_id": sale_id, "status": status}
+        return self.get_all(db, skip=skip, limit=limit, filters=filters)
 
 
-    
-
-
+payment_repository = PaymentRepository()

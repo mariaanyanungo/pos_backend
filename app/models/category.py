@@ -1,29 +1,18 @@
-from sqlalchemy import(
-    Column,
-    Integer,
-    String, 
-    Boolean, 
-    ForeignKey,
-    DateTime,
-    ForeignKey  
-)
+import uuid
+
+from sqlalchemy import Boolean, Column, DateTime, String, Uuid
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from sqlalchemy.types import Numeric
-import uuid
-from sqlalchemy.dialects.postgresql import UUID
-
 
 from database import Base
+
 
 class Category(Base):
     __tablename__ = "categories"
 
-    category_id = Column(UUID(as_uuid=True), primary_key=True, index=True)
-    category_name = Column(String, nullable=False)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.product_id"), nullable=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    category_id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(100), nullable=False, unique=True, index=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    products = relationship("Product", back_populates="categories")
-   
+    products = relationship("Product", back_populates="category")
