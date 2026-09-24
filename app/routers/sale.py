@@ -22,7 +22,11 @@ router = APIRouter(prefix="/sales", tags=["sales"])
 
 
 @router.post("", response_model=SaleRead, status_code=status.HTTP_201_CREATED)
-def create_sale(data: SaleCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def create_sale(
+    data: SaleCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     return sale_service.create_sale(db, data, user)
 
 
@@ -34,11 +38,17 @@ def list_sales(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    return sale_service.list_sales(db, user, status_filter=status_filter, skip=skip, limit=limit)
+    return sale_service.list_sales(
+        db, user, status_filter=status_filter, skip=skip, limit=limit
+    )
 
 
 @router.get("/{sale_id}", response_model=SaleRead)
-def get_sale(sale_id: uuid.UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def get_sale(
+    sale_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     return sale_service.get_sale(db, sale_id, user)
 
 
@@ -47,7 +57,9 @@ def checkout(
     sale_id: uuid.UUID,
     data: CheckoutRequest,
     response: Response,
-    idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=1, max_length=255),
+    idempotency_key: str = Header(
+        ..., alias="Idempotency-Key", min_length=1, max_length=255
+    ),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -81,27 +93,3 @@ def refund_sale(
 ):
     sale, payment, refunded_amount = sale_service.refund_sale(db, sale_id, data, user)
     return {"sale": sale, "payment": payment, "refunded_amount": refunded_amount}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

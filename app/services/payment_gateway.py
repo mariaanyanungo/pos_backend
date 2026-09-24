@@ -6,6 +6,7 @@ processor. To go live, implement `PaymentGateway` for your acquirer (Stripe,
 Adyen, a terminal SDK...) and register it in GATEWAYS. Tests swap entries in
 GATEWAYS to simulate declines.
 """
+
 import uuid
 from dataclasses import dataclass
 from decimal import Decimal
@@ -35,7 +36,9 @@ class PaymentGateway(Protocol):
 
 class CashGateway:
     def authorize(self, amount: Decimal, idempotency_key: str) -> GatewayResult:
-        return GatewayResult(approved=True, reference=f"CASH-{uuid.uuid4().hex[:12].upper()}")
+        return GatewayResult(
+            approved=True, reference=f"CASH-{uuid.uuid4().hex[:12].upper()}"
+        )
 
     def capture(self, reference: str, amount: Decimal) -> GatewayResult:
         return GatewayResult(approved=True, reference=reference)
@@ -49,7 +52,9 @@ class CashGateway:
 
 class SimulatedCardGateway:
     def authorize(self, amount: Decimal, idempotency_key: str) -> GatewayResult:
-        return GatewayResult(approved=True, reference=f"CARD-{uuid.uuid4().hex[:12].upper()}")
+        return GatewayResult(
+            approved=True, reference=f"CARD-{uuid.uuid4().hex[:12].upper()}"
+        )
 
     def capture(self, reference: str, amount: Decimal) -> GatewayResult:
         return GatewayResult(approved=True, reference=reference)

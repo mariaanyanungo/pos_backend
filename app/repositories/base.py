@@ -18,7 +18,9 @@ class BaseRepository(Generic[ModelT]):
     def get(self, db: Session, obj_id: Any) -> ModelT | None:
         return db.get(self.model, obj_id)
 
-    def _query(self, include_inactive: bool = False, filters: dict[str, Any] | None = None):
+    def _query(
+        self, include_inactive: bool = False, filters: dict[str, Any] | None = None
+    ):
         query = select(self.model)
         if not include_inactive and hasattr(self.model, "is_active"):
             query = query.where(self.model.is_active.is_(True))
@@ -28,7 +30,9 @@ class BaseRepository(Generic[ModelT]):
         return query
 
     def _page(self, db: Session, query, skip: int, limit: int) -> list[ModelT]:
-        query = query.order_by(self.model.created_at, self._pk).offset(skip).limit(limit)
+        query = (
+            query.order_by(self.model.created_at, self._pk).offset(skip).limit(limit)
+        )
         return list(db.scalars(query))
 
     def get_all(

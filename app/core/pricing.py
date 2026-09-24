@@ -1,6 +1,6 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Sequence
 
 from app.core.enums import DiscountType, TaxMode
 from app.core.money import (
@@ -39,7 +39,7 @@ class LineInput:
     line_id: str
     unit_price: MoneyInput
     quantity: int
-    tax_rate: MoneyInput = Decimal("0")
+    tax_rate: MoneyInput = Decimal(0)
     tax_mode: TaxMode | str = TaxMode.EXCLUSIVE
     modifiers: tuple[ModifierInput, ...] = ()
     discount: DiscountInput | None = None
@@ -54,24 +54,24 @@ class LineResult:
     gross: Decimal
     line_discount: Decimal
     cart_discount_share: Decimal
-    discounted: Decimal  
+    discounted: Decimal
     tax_rate: Decimal
     tax_mode: TaxMode
     tax: Decimal
-    total: Decimal 
+    total: Decimal
 
 
 @dataclass(frozen=True)
 class TaxBreakdownEntry:
     rate: Decimal
-    taxable: Decimal  
+    taxable: Decimal
     tax: Decimal
 
 
 @dataclass(frozen=True)
 class CartResult:
     lines: tuple[LineResult, ...]
-    subtotal: Decimal 
+    subtotal: Decimal
     line_discount_total: Decimal
     cart_discount_total: Decimal
     discount_total: Decimal

@@ -7,7 +7,11 @@ from app.models.user import User
 def test_register_creates_cashier_without_leaking_password(client):
     response = client.post(
         "/auth/register",
-        json={"username": "Alice", "email": "Alice@Gmail.com", "password": "testpassword"},
+        json={
+            "username": "Alice",
+            "email": "Alice@Gmail.com",
+            "password": "testpassword",
+        },
     )
     assert response.status_code == 201
     body = response.json()
@@ -21,7 +25,12 @@ def test_register_creates_cashier_without_leaking_password(client):
 def test_register_cannot_choose_a_role(client):
     response = client.post(
         "/auth/register",
-        json={"username": "sneaky", "email": "sneaky@gmail.com", "password": "testpassword", "role": "admin"},
+        json={
+            "username": "sneaky",
+            "email": "sneaky@gmail.com",
+            "password": "testpassword",
+            "role": "admin",
+        },
     )
     assert response.status_code == 201
     assert response.json()["role"] == "cashier"
@@ -30,7 +39,11 @@ def test_register_cannot_choose_a_role(client):
 def test_register_duplicate_username_returns_409(client, test_user):
     response = client.post(
         "/auth/register",
-        json={"username": "TestUser", "email": "other@gmail.com", "password": "testpassword"},
+        json={
+            "username": "TestUser",
+            "email": "other@gmail.com",
+            "password": "testpassword",
+        },
     )
     assert response.status_code == 409
 
@@ -38,7 +51,11 @@ def test_register_duplicate_username_returns_409(client, test_user):
 def test_register_duplicate_email_returns_409(client, test_user):
     response = client.post(
         "/auth/register",
-        json={"username": "another", "email": test_user["email"], "password": "testpassword"},
+        json={
+            "username": "another",
+            "email": test_user["email"],
+            "password": "testpassword",
+        },
     )
     assert response.status_code == 409
 
@@ -73,25 +90,35 @@ def test_login_returns_bearer_token_that_works(client, test_user):
     assert response.status_code == 200
     body = response.json()
     assert body["token_type"] == "bearer"
-    me = client.get("/users/me", headers={"Authorization": f"Bearer {body['access_token']}"})
+    me = client.get(
+        "/users/me", headers={"Authorization": f"Bearer {body['access_token']}"}
+    )
     assert me.status_code == 200
     assert me.json()["username"] == "testuser"
 
 
 def test_login_username_is_case_insensitive(client, test_user):
-    response = client.post("/auth/login", data={"username": "TESTUSER", "password": test_user["password"]})
+    response = client.post(
+        "/auth/login", data={"username": "TESTUSER", "password": test_user["password"]}
+    )
     assert response.status_code == 200
 
 
 def test_login_with_wrong_password_returns_401(client, test_user):
-    response = client.post("/auth/login", data={"username": "testuser", "password": "wrongpassword"})
+    response = client.post(
+        "/auth/login", data={"username": "testuser", "password": "wrongpassword"}
+    )
     assert response.status_code == 401
     assert response.headers["www-authenticate"] == "Bearer"
 
 
 def test_login_with_unknown_user_returns_same_401(client, test_user):
-    unknown = client.post("/auth/login", data={"username": "ghost", "password": "testpassword"})
-    wrong = client.post("/auth/login", data={"username": "testuser", "password": "nope-nope"})
+    unknown = client.post(
+        "/auth/login", data={"username": "ghost", "password": "testpassword"}
+    )
+    wrong = client.post(
+        "/auth/login", data={"username": "testuser", "password": "nope-nope"}
+    )
     assert unknown.status_code == wrong.status_code == 401
     assert unknown.json() == wrong.json()
 
@@ -99,7 +126,9 @@ def test_login_with_unknown_user_returns_same_401(client, test_user):
 def test_inactive_user_cannot_log_in(client, test_user, db_session):
     db_session.query(User).filter_by(username="testuser").update({"is_active": False})
     db_session.commit()
-    response = client.post("/auth/login", data={"username": "testuser", "password": test_user["password"]})
+    response = client.post(
+        "/auth/login", data={"username": "testuser", "password": test_user["password"]}
+    )
     assert response.status_code == 401
 
 
@@ -128,14 +157,18 @@ def test_token_for_deleted_user_returns_401(client):
     assert response.status_code == 401
 
 
-def test_token_of_deactivated_user_returns_403(client, test_user, auth_headers, db_session):
+def test_token_of_deactivated_user_returns_403(
+    client, test_user, auth_headers, db_session
+):
     db_session.query(User).filter_by(username="testuser").update({"is_active": False})
     db_session.commit()
     response = client.get("/products", headers=auth_headers)
     assert response.status_code == 403
 
 
-def test_bootstrap_admin_is_created_once_and_can_log_in(client, db_session, monkeypatch):
+def test_bootstrap_admin_is_created_once_and_can_log_in(
+    client, db_session, monkeypatch
+):
     from dataclasses import replace
 
     from app.services import auth_service
@@ -153,7 +186,9 @@ def test_bootstrap_admin_is_created_once_and_can_log_in(client, db_session, monk
     created = auth_service.bootstrap_admin(db_session)
     assert created is not None and created.role == "admin"
     assert auth_service.bootstrap_admin(db_session) is None  # idempotent
-    login = client.post("/auth/login", data={"username": "root", "password": "rootpassword1"})
+    login = client.post(
+        "/auth/login", data={"username": "root", "password": "rootpassword1"}
+    )
     assert login.status_code == 200
 
 

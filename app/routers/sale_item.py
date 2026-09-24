@@ -42,28 +42,3 @@ def remove_item(
     user: User = Depends(get_current_user),
 ):
     return sale_item_service.remove_item(db, sale_id, item_id, user)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

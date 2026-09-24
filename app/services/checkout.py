@@ -68,7 +68,9 @@ def _resolve_tender(method: str, total: Decimal, tendered) -> tuple[Decimal, Dec
     return total, ZERO
 
 
-def _replay(db: Session, payment: Payment, sale_id: uuid.UUID, fingerprint: str, user: User) -> CheckoutResult:
+def _replay(
+    db: Session, payment: Payment, sale_id: uuid.UUID, fingerprint: str, user: User
+) -> CheckoutResult:
     if payment.sale_id != sale_id or payment.request_fingerprint != fingerprint:
         raise HTTPException(
             422,
@@ -76,7 +78,10 @@ def _replay(db: Session, payment: Payment, sale_id: uuid.UUID, fingerprint: str,
         )
     sale = sale_svc.get_sale(db, payment.sale_id, user)  # also enforces ownership
     if payment.status == PaymentStatus.FAILED.value:
-        raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, detail=payment.failure_reason or "Payment failed")
+        raise HTTPException(
+            status.HTTP_402_PAYMENT_REQUIRED,
+            detail=payment.failure_reason or "Payment failed",
+        )
     receipt = receipt_repository.get_by_sale_id(db, sale.sale_id)
     return CheckoutResult(sale=sale, payment=payment, receipt=receipt, replayed=True)
 
@@ -85,7 +90,9 @@ def _record_failure(db: Session, values: dict, reason: str):
     """Undo everything the attempt did (stock, sale changes) and keep only an
     audit row saying the payment failed, under the caller's idempotency key."""
     db.rollback()
-    payment_repository.create(db, {**values, "status": PaymentStatus.FAILED.value, "failure_reason": reason})
+    payment_repository.create(
+        db, {**values, "status": PaymentStatus.FAILED.value, "failure_reason": reason}
+    )
     db.commit()
     raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, detail=reason)
 
@@ -122,13 +129,17 @@ def checkout(
         return _replay(db, existing, sale_id, fingerprint, user)
 
     try:
-        sale_svc.require_status(sale, SaleStatus.OPEN, f"Sale is {sale.status}, not open for checkout")
+        sale_svc.require_status(
+            sale, SaleStatus.OPEN, f"Sale is {sale.status}, not open for checkout"
+        )
         if not sale.items:
             raise HTTPException(422, detail="Cannot check out an empty sale")
 
         sale_svc.reprice(sale)
         total = money(sale.total_amount)
-        tendered, change = _resolve_tender(data.payment_method, total, data.amount_tendered)
+        tendered, change = _resolve_tender(
+            data.payment_method, total, data.amount_tendered
+        )
     except Exception:
         db.rollback()
         raise
@@ -144,9 +155,10 @@ def checkout(
     }
 
     try:
-        payment = payment_repository.create(db, {**payment_values, "status": PaymentStatus.PENDING.value})
+        payment = payment_repository.create(
+            db, {**payment_values, "status": PaymentStatus.PENDING.value}
+        )
     except IntegrityError:
-      
         db.rollback()
         winner = payment_repository.get_by_idempotency_key(db, key)
         if winner is None:
@@ -166,14 +178,20 @@ def checkout(
     try:
         authorization = gateway.authorize(total, key)
         if not authorization.approved:
-            _record_failure(db, payment_values, authorization.failure_reason or "Payment was declined")
+            _record_failure(
+                db,
+                payment_values,
+                authorization.failure_reason or "Payment was declined",
+            )
         payment_svc.transition(payment, PaymentStatus.AUTHORIZED)
         payment.gateway_reference = authorization.reference
 
         capture = gateway.capture(authorization.reference, total)
         if not capture.approved:
             gateway.void(authorization.reference)
-            _record_failure(db, payment_values, capture.failure_reason or "Payment capture failed")
+            _record_failure(
+                db, payment_values, capture.failure_reason or "Payment capture failed"
+            )
     except payment_gateway.GatewayError as exc:
         db.rollback()
         raise HTTPException(

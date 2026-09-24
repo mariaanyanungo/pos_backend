@@ -1,5 +1,3 @@
-
-
 import uuid
 from decimal import Decimal
 
@@ -37,26 +35,35 @@ class SaleItem(Base):
     )
 
     sale_item_id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    sale_id = Column(Uuid(as_uuid=True), ForeignKey("sales.sale_id"), nullable=False, index=True)
-    product_id = Column(Uuid(as_uuid=True), ForeignKey("products.product_id"), nullable=False, index=True)
+    sale_id = Column(
+        Uuid(as_uuid=True), ForeignKey("sales.sale_id"), nullable=False, index=True
+    )
+    product_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("products.product_id"),
+        nullable=False,
+        index=True,
+    )
 
     product_name = Column(String(200), nullable=False)
-    barcode = Column(String(64), nullable=True) 
+    barcode = Column(String(64), nullable=True)
     unit_price = Column(Numeric(12, 2), nullable=False)
     tax_rate = Column(Numeric(5, 2), nullable=False, default=_ZERO)
     quantity = Column(Integer, nullable=False)
 
-    discount_percent = Column(Numeric(5, 2), nullable=True)  
-    discount_amount = Column(Numeric(12, 2), nullable=False, default=_ZERO)  
+    discount_percent = Column(Numeric(5, 2), nullable=True)
+    discount_amount = Column(Numeric(12, 2), nullable=False, default=_ZERO)
 
-    line_subtotal = Column(Numeric(12, 2), nullable=False, default=_ZERO) 
+    line_subtotal = Column(Numeric(12, 2), nullable=False, default=_ZERO)
     tax_amount = Column(Numeric(12, 2), nullable=False, default=_ZERO)
-    line_total = Column(Numeric(12, 2), nullable=False, default=_ZERO)    
+    line_total = Column(Numeric(12, 2), nullable=False, default=_ZERO)
 
     returned_quantity = Column(Integer, nullable=False, default=0)
     refunded_total = Column(Numeric(12, 2), nullable=False, default=_ZERO)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     sale = relationship("Sale", back_populates="items")
     product = relationship("Product")

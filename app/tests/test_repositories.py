@@ -1,12 +1,11 @@
 import uuid
 
-from app.models.category import Category
-from app.models.product import Product
+from app.core.enums import UserRole
 from app.repositories.category import category_repository
 from app.repositories.product import product_repository
 from app.repositories.user import user_repository
+
 from .conftest import seed_user
-from app.core.enums import UserRole
 
 
 def _make_product(db, *, stock=5, active=True):
@@ -50,8 +49,15 @@ def test_adjust_stock_can_take_exactly_the_last_unit(db_session):
 
 def test_adjust_stock_require_active(db_session):
     product = _make_product(db_session, stock=5, active=False)
-    assert product_repository.adjust_stock(db_session, product.product_id, -1, require_active=True) is False
-    assert product_repository.adjust_stock(db_session, product.product_id, 4) is True  # restocking is allowed
+    assert (
+        product_repository.adjust_stock(
+            db_session, product.product_id, -1, require_active=True
+        )
+        is False
+    )
+    assert (
+        product_repository.adjust_stock(db_session, product.product_id, 4) is True
+    )  # restocking is allowed
 
 
 def test_adjust_stock_unknown_product_returns_false(db_session):
@@ -60,7 +66,9 @@ def test_adjust_stock_unknown_product_returns_false(db_session):
 
 def test_update_applies_every_field_not_just_the_first(db_session):
     product = _make_product(db_session)
-    product_repository.update(db_session, product, {"name": "Gadget", "brand_name": "Globex"})
+    product_repository.update(
+        db_session, product, {"name": "Gadget", "brand_name": "Globex"}
+    )
     db_session.commit()
     db_session.refresh(product)
     assert (product.name, product.brand_name) == ("Gadget", "Globex")
@@ -75,7 +83,9 @@ def test_get_all_hides_inactive_by_default(db_session):
 
 def test_user_lookup_by_username_uses_the_username_column(db_session):
     user = seed_user(db_session, "cashier1", UserRole.CASHIER)
-    assert user_repository.get_by_username(db_session, "cashier1").user_id == user.user_id
+    assert (
+        user_repository.get_by_username(db_session, "cashier1").user_id == user.user_id
+    )
     assert user_repository.get_by_username(db_session, str(user.user_id)) is None
     assert user_repository.get_by_id(db_session, user.user_id).username == "cashier1"
     assert user_repository.count(db_session) == 1

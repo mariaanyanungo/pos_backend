@@ -15,6 +15,8 @@ class Customer(Base):
     email = Column(String(255), unique=True, nullable=True, index=True)
     phone = Column(String(50), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     sales = relationship("Sale", back_populates="customer")

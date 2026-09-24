@@ -1,5 +1,3 @@
-
-
 import uuid
 
 from sqlalchemy import select
@@ -14,7 +12,11 @@ class SaleRepository(BaseRepository[Sale]):
         super().__init__(Sale)
 
     def get_with_items(self, db: Session, sale_id: uuid.UUID) -> Sale | None:
-        stmt = select(Sale).options(selectinload(Sale.items)).where(Sale.sale_id == sale_id)
+        stmt = (
+            select(Sale)
+            .options(selectinload(Sale.items))
+            .where(Sale.sale_id == sale_id)
+        )
         return db.scalar(stmt)
 
     def get_for_update(self, db: Session, sale_id: uuid.UUID) -> Sale | None:
@@ -43,7 +45,11 @@ class SaleRepository(BaseRepository[Sale]):
             stmt = stmt.where(Sale.cashier_id == cashier_id)
         if status is not None:
             stmt = stmt.where(Sale.status == status)
-        stmt = stmt.order_by(Sale.created_at.desc(), Sale.sale_id).offset(skip).limit(limit)
+        stmt = (
+            stmt.order_by(Sale.created_at.desc(), Sale.sale_id)
+            .offset(skip)
+            .limit(limit)
+        )
         return list(db.scalars(stmt))
 
 

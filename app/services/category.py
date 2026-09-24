@@ -14,8 +14,12 @@ def get_category(db: Session, category_id: uuid.UUID):
     return get_or_404(category_repository, db, category_id, "Category")
 
 
-def list_categories(db: Session, *, skip: int = 0, limit: int = 100, include_inactive: bool = False):
-    return category_repository.get_all(db, skip=skip, limit=limit, include_inactive=include_inactive)
+def list_categories(
+    db: Session, *, skip: int = 0, limit: int = 100, include_inactive: bool = False
+):
+    return category_repository.get_all(
+        db, skip=skip, limit=limit, include_inactive=include_inactive
+    )
 
 
 def create_category(db: Session, data: CategoryCreate):

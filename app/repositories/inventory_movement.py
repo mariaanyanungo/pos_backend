@@ -37,7 +37,9 @@ class InventoryMovementRepository(BaseRepository[InventoryMovement]):
     def list_for_product(
         self, db: Session, product_id: uuid.UUID, *, skip: int = 0, limit: int = 100
     ) -> list[InventoryMovement]:
-        query = select(InventoryMovement).where(InventoryMovement.product_id == product_id)
+        query = select(InventoryMovement).where(
+            InventoryMovement.product_id == product_id
+        )
         return self._page(db, query, skip, limit)
 
 

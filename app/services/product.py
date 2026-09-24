@@ -40,12 +40,18 @@ def list_products(
         skip=skip,
         limit=limit,
         include_inactive=include_inactive,
-        filters={"category_id": category_id, "supplier_id": supplier_id, "brand_name": brand_name},
+        filters={
+            "category_id": category_id,
+            "supplier_id": supplier_id,
+            "brand_name": brand_name,
+        },
         name_contains=name,
     )
 
 
-def _validate_references(db: Session, category_id: uuid.UUID | None, supplier_id: uuid.UUID | None) -> None:
+def _validate_references(
+    db: Session, category_id: uuid.UUID | None, supplier_id: uuid.UUID | None
+) -> None:
     if category_id is not None:
         category = category_repository.get(db, category_id)
         if category is None or not category.is_active:

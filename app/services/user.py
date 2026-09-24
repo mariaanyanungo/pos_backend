@@ -15,19 +15,33 @@ def get_user(db: Session, user_id: uuid.UUID):
     return get_or_404(user_repository, db, user_id, "User")
 
 
-def list_users(db: Session, *, skip: int = 0, limit: int = 100, include_inactive: bool = False):
-    return user_repository.get_all(db, skip=skip, limit=limit, include_inactive=include_inactive)
+def list_users(
+    db: Session, *, skip: int = 0, limit: int = 100, include_inactive: bool = False
+):
+    return user_repository.get_all(
+        db, skip=skip, limit=limit, include_inactive=include_inactive
+    )
 
 
-def _ensure_unique(db: Session, *, username: str | None = None, email: str | None = None, exclude_id=None):
+def _ensure_unique(
+    db: Session,
+    *,
+    username: str | None = None,
+    email: str | None = None,
+    exclude_id=None,
+):
     if username:
         existing = user_repository.get_by_username(db, username)
         if existing and existing.user_id != exclude_id:
-            raise HTTPException(status.HTTP_409_CONFLICT, detail="Username already taken")
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, detail="Username already taken"
+            )
     if email:
         existing = user_repository.get_by_email(db, email)
         if existing and existing.user_id != exclude_id:
-            raise HTTPException(status.HTTP_409_CONFLICT, detail="Email already registered")
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, detail="Email already registered"
+            )
 
 
 def create_user(db: Session, data: UserCreate):
@@ -48,9 +62,14 @@ def update_user(db: Session, user_id: uuid.UUID, data: UserUpdate, acting_user: 
 
     if user.user_id == acting_user.user_id:
         if changes.get("is_active") is False:
-            raise HTTPException(status.HTTP_409_CONFLICT, detail="You cannot deactivate your own account")
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                detail="You cannot deactivate your own account",
+            )
         if "role" in changes and changes["role"] != user.role:
-            raise HTTPException(status.HTTP_409_CONFLICT, detail="You cannot change your own role")
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, detail="You cannot change your own role"
+            )
 
     password = changes.pop("password", None)
     if password:
@@ -67,7 +86,9 @@ def delete_user(db: Session, user_id: uuid.UUID, acting_user: User) -> None:
     """Soft delete - sales keep referencing the cashier who made them."""
     user = get_user(db, user_id)
     if user.user_id == acting_user.user_id:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail="You cannot deactivate your own account")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, detail="You cannot deactivate your own account"
+        )
     user_repository.update(db, user, {"is_active": False})
     db.commit()
 

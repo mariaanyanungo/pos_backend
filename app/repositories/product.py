@@ -1,5 +1,3 @@
-
-    
 import uuid
 from typing import Any
 
@@ -29,7 +27,11 @@ class ProductRepository(BaseRepository[Product]):
     ) -> list[Product]:
         query = self._query(include_inactive, filters)
         if name_contains:
-            query = query.where(func.lower(Product.name).contains(name_contains.lower(), autoescape=True))
+            query = query.where(
+                func.lower(Product.name).contains(
+                    name_contains.lower(), autoescape=True
+                )
+            )
         return self._page(db, query, skip, limit)
 
     def count_active_in_category(self, db: Session, category_id: uuid.UUID) -> int:
@@ -61,11 +63,10 @@ class ProductRepository(BaseRepository[Product]):
         )
         if require_active:
             stmt = stmt.where(Product.is_active.is_(True))
-        stmt = stmt.values(stock_quantity=Product.stock_quantity + delta).execution_options(
-            synchronize_session=False
-        )
+        stmt = stmt.values(
+            stock_quantity=Product.stock_quantity + delta
+        ).execution_options(synchronize_session=False)
         return db.execute(stmt).rowcount == 1
 
 
 product_repository = ProductRepository()
-

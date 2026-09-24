@@ -36,14 +36,14 @@ def test_legal_transitions(start, end):
 @pytest.mark.parametrize(
     "start,end",
     [
-        (PaymentStatus.PENDING, PaymentStatus.CAPTURED),  
+        (PaymentStatus.PENDING, PaymentStatus.CAPTURED),
         (PaymentStatus.PENDING, PaymentStatus.REFUNDED),
         (PaymentStatus.AUTHORIZED, PaymentStatus.REFUNDED),
-        (PaymentStatus.CAPTURED, PaymentStatus.FAILED),    
+        (PaymentStatus.CAPTURED, PaymentStatus.FAILED),
         (PaymentStatus.CAPTURED, PaymentStatus.AUTHORIZED),
-        (PaymentStatus.FAILED, PaymentStatus.CAPTURED),    
+        (PaymentStatus.FAILED, PaymentStatus.CAPTURED),
         (PaymentStatus.FAILED, PaymentStatus.PENDING),
-        (PaymentStatus.REFUNDED, PaymentStatus.CAPTURED), 
+        (PaymentStatus.REFUNDED, PaymentStatus.CAPTURED),
     ],
 )
 def test_illegal_transitions_are_rejected(start, end):
@@ -80,7 +80,10 @@ def test_partial_then_full_refund_moves_to_refunded_only_when_complete():
     assert payment.status == PaymentStatus.REFUNDED.value
     assert str(payment.refunded_amount) == "10.00"
 
-def test_cashier_reads_only_their_own_payments_and_receipts(client, pos, other_cashier_headers, make_product):
+
+def test_cashier_reads_only_their_own_payments_and_receipts(
+    client, pos, other_cashier_headers, make_product
+):
     product = make_product()
     done = pos.completed_sale(product["product_id"], 1)
     payment_id = done["payment"]["payment_id"]
@@ -89,17 +92,40 @@ def test_cashier_reads_only_their_own_payments_and_receipts(client, pos, other_c
 
     assert client.get(f"/payments/{payment_id}", headers=pos.headers).status_code == 200
     assert client.get(f"/receipts/{receipt_id}", headers=pos.headers).status_code == 200
-    assert client.get(f"/payments/{payment_id}", headers=other_cashier_headers).status_code == 404
-    assert client.get(f"/receipts/{receipt_id}", headers=other_cashier_headers).status_code == 404
-    assert client.get(f"/receipts/by-sale/{sale_id}", headers=other_cashier_headers).status_code == 404
+    assert (
+        client.get(f"/payments/{payment_id}", headers=other_cashier_headers).status_code
+        == 404
+    )
+    assert (
+        client.get(f"/receipts/{receipt_id}", headers=other_cashier_headers).status_code
+        == 404
+    )
+    assert (
+        client.get(
+            f"/receipts/by-sale/{sale_id}", headers=other_cashier_headers
+        ).status_code
+        == 404
+    )
 
 
-def test_managers_and_admins_read_everything(client, pos, manager_headers, admin_headers, make_product):
+def test_managers_and_admins_read_everything(
+    client, pos, manager_headers, admin_headers, make_product
+):
     product = make_product()
     done = pos.completed_sale(product["product_id"], 1)
     for headers in (manager_headers, admin_headers):
-        assert client.get(f"/payments/{done['payment']['payment_id']}", headers=headers).status_code == 200
-        assert client.get(f"/receipts/{done['receipt']['receipt_id']}", headers=headers).status_code == 200
+        assert (
+            client.get(
+                f"/payments/{done['payment']['payment_id']}", headers=headers
+            ).status_code
+            == 200
+        )
+        assert (
+            client.get(
+                f"/receipts/{done['receipt']['receipt_id']}", headers=headers
+            ).status_code
+            == 200
+        )
         assert len(client.get("/payments", headers=headers).json()) == 1
         assert len(client.get("/receipts", headers=headers).json()) == 1
 
@@ -117,7 +143,10 @@ def test_payments_and_receipts_require_login(client):
 def test_payments_and_receipts_are_read_only(client, pos, admin_headers, make_product):
     product = make_product()
     done = pos.completed_sale(product["product_id"], 1)
-    for path in (f"/payments/{done['payment']['payment_id']}", f"/receipts/{done['receipt']['receipt_id']}"):
+    for path in (
+        f"/payments/{done['payment']['payment_id']}",
+        f"/receipts/{done['receipt']['receipt_id']}",
+    ):
         assert client.put(path, json={}, headers=admin_headers).status_code == 405
         assert client.delete(path, headers=admin_headers).status_code == 405
     assert client.post("/payments", json={}, headers=admin_headers).status_code == 405
@@ -128,10 +157,16 @@ def test_unknown_payment_and_receipt_return_404(client, manager_headers):
     zero = "00000000-0000-0000-0000-000000000000"
     assert client.get(f"/payments/{zero}", headers=manager_headers).status_code == 404
     assert client.get(f"/receipts/{zero}", headers=manager_headers).status_code == 404
-    assert client.get(f"/receipts/by-sale/{zero}", headers=manager_headers).status_code == 404
+    assert (
+        client.get(f"/receipts/by-sale/{zero}", headers=manager_headers).status_code
+        == 404
+    )
 
 
 def test_receipt_numbers_are_unique(client, pos, manager_headers, make_product):
     product = make_product(stock_quantity=10)
-    numbers = {pos.completed_sale(product["product_id"], 1)["receipt"]["receipt_number"] for _ in range(3)}
+    numbers = {
+        pos.completed_sale(product["product_id"], 1)["receipt"]["receipt_number"]
+        for _ in range(3)
+    }
     assert len(numbers) == 3

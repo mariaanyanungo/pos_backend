@@ -9,7 +9,9 @@ from app.services.supplier import supplier_service
 from database import get_db
 
 # Supplier data (contacts, addresses) is back-office only.
-router = APIRouter(prefix="/suppliers", tags=["suppliers"], dependencies=[Depends(require_manager)])
+router = APIRouter(
+    prefix="/suppliers", tags=["suppliers"], dependencies=[Depends(require_manager)]
+)
 
 
 @router.get("", response_model=list[SupplierRead])
@@ -19,7 +21,9 @@ def list_suppliers(
     include_inactive: bool = False,
     db: Session = Depends(get_db),
 ):
-    return supplier_service.list_suppliers(db, skip=skip, limit=limit, include_inactive=include_inactive)
+    return supplier_service.list_suppliers(
+        db, skip=skip, limit=limit, include_inactive=include_inactive
+    )
 
 
 @router.get("/{supplier_id}", response_model=SupplierRead)
@@ -33,40 +37,12 @@ def create_supplier(data: SupplierCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{supplier_id}", response_model=SupplierRead)
-def update_supplier(supplier_id: uuid.UUID, data: SupplierUpdate, db: Session = Depends(get_db)):
+def update_supplier(
+    supplier_id: uuid.UUID, data: SupplierUpdate, db: Session = Depends(get_db)
+):
     return supplier_service.update_supplier(db, supplier_id, data)
 
 
 @router.delete("/{supplier_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_supplier(supplier_id: uuid.UUID, db: Session = Depends(get_db)):
     supplier_service.delete_supplier(db, supplier_id)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

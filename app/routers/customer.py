@@ -9,7 +9,9 @@ from app.services.customer import customer_service
 from database import get_db
 
 # Cashiers look customers up and register new ones at the till; only managers deactivate them.
-router = APIRouter(prefix="/customers", tags=["customers"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="/customers", tags=["customers"], dependencies=[Depends(get_current_user)]
+)
 
 
 @router.get("", response_model=list[CustomerRead])
@@ -19,7 +21,9 @@ def list_customers(
     include_inactive: bool = False,
     db: Session = Depends(get_db),
 ):
-    return customer_service.list_customers(db, skip=skip, limit=limit, include_inactive=include_inactive)
+    return customer_service.list_customers(
+        db, skip=skip, limit=limit, include_inactive=include_inactive
+    )
 
 
 @router.get("/{customer_id}", response_model=CustomerRead)
@@ -33,40 +37,16 @@ def create_customer(data: CustomerCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{customer_id}", response_model=CustomerRead)
-def update_customer(customer_id: uuid.UUID, data: CustomerUpdate, db: Session = Depends(get_db)):
+def update_customer(
+    customer_id: uuid.UUID, data: CustomerUpdate, db: Session = Depends(get_db)
+):
     return customer_service.update_customer(db, customer_id, data)
 
 
-@router.delete("/{customer_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_manager)])
+@router.delete(
+    "/{customer_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_manager)],
+)
 def delete_customer(customer_id: uuid.UUID, db: Session = Depends(get_db)):
     customer_service.delete_customer(db, customer_id)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

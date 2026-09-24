@@ -8,10 +8,10 @@ class UserRole(str, Enum):
 
 
 class SaleStatus(str, Enum):
-    OPEN = "open"            
-    COMPLETED = "completed"  
-    VOIDED = "voided"        
-    REFUNDED = "refunded"   
+    OPEN = "open"
+    COMPLETED = "completed"
+    VOIDED = "voided"
+    REFUNDED = "refunded"
 
 
 class PaymentStatus(str, Enum):

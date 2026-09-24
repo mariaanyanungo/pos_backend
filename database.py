@@ -11,7 +11,9 @@ load_dotenv()
 def get_database_url() -> str:
     url = (os.getenv("DATABASE_URL") or "").strip()
     if not url:
-        raise ValueError("CRITICAL CONFIG ERROR: 'DATABASE_URL' is missing from your .env file!")
+        raise ValueError(
+            "CRITICAL CONFIG ERROR: 'DATABASE_URL' is missing from your .env file!"
+        )
     return url
 
 

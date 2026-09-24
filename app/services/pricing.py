@@ -8,6 +8,7 @@ Conventions
 * `prices_include_tax=False` (US style):  total = gross - discount + tax
 * `prices_include_tax=True`  (VAT style): total = gross - discount, tax is the part of it that is VAT
 """
+
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -20,10 +21,10 @@ class PricingError(ValueError):
 
 @dataclass(frozen=True)
 class LineAmounts:
-    gross: Decimal     
+    gross: Decimal
     discount: Decimal
     tax: Decimal
-    total: Decimal     
+    total: Decimal
 
 
 def calculate_line(

@@ -1,4 +1,3 @@
-
 import uuid
 from decimal import Decimal
 
@@ -18,8 +17,15 @@ class Receipt(Base):
 
     receipt_id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     receipt_number = Column(String(40), nullable=False, unique=True, index=True)
-    sale_id = Column(Uuid(as_uuid=True), ForeignKey("sales.sale_id"), nullable=False, unique=True)
-    payment_id = Column(Uuid(as_uuid=True), ForeignKey("payments.payment_id"), nullable=False, unique=True)
+    sale_id = Column(
+        Uuid(as_uuid=True), ForeignKey("sales.sale_id"), nullable=False, unique=True
+    )
+    payment_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("payments.payment_id"),
+        nullable=False,
+        unique=True,
+    )
 
     subtotal = Column(Numeric(12, 2), nullable=False)
     discount = Column(Numeric(12, 2), nullable=False, default=_ZERO)
@@ -30,7 +36,9 @@ class Receipt(Base):
     prices_include_tax = Column(Boolean, nullable=False, default=False)
 
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     sale = relationship("Sale", back_populates="receipt")
     payment = relationship("Payment", back_populates="receipt")

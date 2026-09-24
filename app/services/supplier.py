@@ -12,8 +12,12 @@ def get_supplier(db: Session, supplier_id: uuid.UUID):
     return get_or_404(supplier_repository, db, supplier_id, "Supplier")
 
 
-def list_suppliers(db: Session, *, skip: int = 0, limit: int = 100, include_inactive: bool = False):
-    return supplier_repository.get_all(db, skip=skip, limit=limit, include_inactive=include_inactive)
+def list_suppliers(
+    db: Session, *, skip: int = 0, limit: int = 100, include_inactive: bool = False
+):
+    return supplier_repository.get_all(
+        db, skip=skip, limit=limit, include_inactive=include_inactive
+    )
 
 
 def create_supplier(db: Session, data: SupplierCreate):

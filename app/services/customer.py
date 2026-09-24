@@ -12,8 +12,12 @@ def get_customer(db: Session, customer_id: uuid.UUID):
     return get_or_404(customer_repository, db, customer_id, "Customer")
 
 
-def list_customers(db: Session, *, skip: int = 0, limit: int = 100, include_inactive: bool = False):
-    return customer_repository.get_all(db, skip=skip, limit=limit, include_inactive=include_inactive)
+def list_customers(
+    db: Session, *, skip: int = 0, limit: int = 100, include_inactive: bool = False
+):
+    return customer_repository.get_all(
+        db, skip=skip, limit=limit, include_inactive=include_inactive
+    )
 
 
 def create_customer(db: Session, data: CustomerCreate):

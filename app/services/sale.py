@@ -31,7 +31,10 @@ def is_privileged(user: User) -> bool:
 
 def require_privileged(user: User, action: str) -> None:
     if not is_privileged(user):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=f"Manager or admin approval is required to {action}")
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            detail=f"Manager or admin approval is required to {action}",
+        )
 
 
 def assert_access(sale: Sale, user: User) -> None:
@@ -53,7 +56,9 @@ def reprice(sale: Sale) -> None:
         raise HTTPException(422, detail=str(exc)) from exc
 
 
-def get_sale(db: Session, sale_id: uuid.UUID, user: User, *, for_update: bool = False) -> Sale:
+def get_sale(
+    db: Session, sale_id: uuid.UUID, user: User, *, for_update: bool = False
+) -> Sale:
     sale = (
         sale_repository.get_for_update(db, sale_id)
         if for_update
@@ -74,7 +79,9 @@ def list_sales(
     limit: int = 100,
 ):
     cashier_id = None if is_privileged(user) else user.user_id
-    return sale_repository.search(db, cashier_id=cashier_id, status=status_filter, skip=skip, limit=limit)
+    return sale_repository.search(
+        db, cashier_id=cashier_id, status=status_filter, skip=skip, limit=limit
+    )
 
 
 def create_sale(db: Session, data: SaleCreate, user: User) -> Sale:
@@ -111,12 +118,19 @@ def void_sale(db: Session, sale_id: uuid.UUID, reason: str | None, user: User) -
             require_privileged(user, "void a completed sale")
             payment = payment_repository.get_captured_for_sale(db, sale.sale_id)
             if payment is None:
-                raise HTTPException(status.HTTP_409_CONFLICT, detail="Sale has no captured payment to reverse")
-            lines = [(item, item.quantity - item.returned_quantity) for item in sale.items]
+                raise HTTPException(
+                    status.HTTP_409_CONFLICT,
+                    detail="Sale has no captured payment to reverse",
+                )
+            lines = [
+                (item, item.quantity - item.returned_quantity) for item in sale.items
+            ]
             lines = [(item, units) for item, units in lines if units > 0]
             _return_lines(db, sale, payment, lines, user, stock_reason=StockReason.VOID)
         else:
-            raise HTTPException(status.HTTP_409_CONFLICT, detail=f"Sale is already {sale.status}")
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, detail=f"Sale is already {sale.status}"
+            )
 
         sale.status = SaleStatus.VOIDED.value
         sale.voided_at = _now()
@@ -134,21 +148,30 @@ def refund_sale(db: Session, sale_id: uuid.UUID, data: RefundRequest, user: User
     require_privileged(user, "refund a sale")
     sale = get_sale(db, sale_id, user, for_update=True)
     try:
-        require_status(sale, SaleStatus.COMPLETED, "Only completed sales can be refunded")
+        require_status(
+            sale, SaleStatus.COMPLETED, "Only completed sales can be refunded"
+        )
         payment = payment_repository.get_captured_for_sale(db, sale.sale_id)
         if payment is None:
-            raise HTTPException(status.HTTP_409_CONFLICT, detail="Sale has no captured payment to refund")
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                detail="Sale has no captured payment to refund",
+            )
 
         items = {item.sale_item_id: item for item in sale.items}
         requested: dict[uuid.UUID, int] = {}
         for line in data.items:
-            requested[line.sale_item_id] = requested.get(line.sale_item_id, 0) + line.quantity
+            requested[line.sale_item_id] = (
+                requested.get(line.sale_item_id, 0) + line.quantity
+            )
 
         lines = []
         for item_id, units in requested.items():
             item = items.get(item_id)
             if item is None:
-                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Sale item not found on this sale")
+                raise HTTPException(
+                    status.HTTP_404_NOT_FOUND, detail="Sale item not found on this sale"
+                )
             returnable = item.quantity - item.returned_quantity
             if units > returnable:
                 raise HTTPException(
@@ -157,7 +180,9 @@ def refund_sale(db: Session, sale_id: uuid.UUID, data: RefundRequest, user: User
                 )
             lines.append((item, units))
 
-        refund_total = _return_lines(db, sale, payment, lines, user, stock_reason=StockReason.RETURN)
+        refund_total = _return_lines(
+            db, sale, payment, lines, user, stock_reason=StockReason.RETURN
+        )
         if all(item.returned_quantity == item.quantity for item in sale.items):
             sale.status = SaleStatus.REFUNDED.value
         db.commit()
@@ -169,7 +194,9 @@ def refund_sale(db: Session, sale_id: uuid.UUID, data: RefundRequest, user: User
     return sale, payment, refund_total
 
 
-def _return_lines(db: Session, sale: Sale, payment, lines, user: User, *, stock_reason: StockReason):
+def _return_lines(
+    db: Session, sale: Sale, payment, lines, user: User, *, stock_reason: StockReason
+):
     """Shared by void and refund: restock units, book the refund on each line and
     on the payment. Runs inside the caller's transaction."""
     refund_total = ZERO
@@ -185,7 +212,12 @@ def _return_lines(db: Session, sale: Sale, payment, lines, user: User, *, stock_
         item.refunded_total = money(item.refunded_total + amount)
         refund_total += amount
         inventory_svc.restore_stock(
-            db, item.product_id, units, stock_reason, sale_id=sale.sale_id, user_id=user.user_id
+            db,
+            item.product_id,
+            units,
+            stock_reason,
+            sale_id=sale.sale_id,
+            user_id=user.user_id,
         )
     refund_total = money(refund_total)
     payment_svc.refund(payment, refund_total)

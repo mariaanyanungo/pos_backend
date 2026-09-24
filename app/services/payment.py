@@ -43,19 +43,28 @@ def refund(payment: Payment, amount) -> Payment:
     """
     amount = money(amount)
     if PaymentStatus(payment.status) is not PaymentStatus.CAPTURED:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail="Only captured payments can be refunded")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, detail="Only captured payments can be refunded"
+        )
     if amount > money(payment.amount - payment.refunded_amount):
-        raise HTTPException(status.HTTP_409_CONFLICT, detail="Refund exceeds the captured amount")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, detail="Refund exceeds the captured amount"
+        )
 
     if amount > 0:
         try:
-            result = payment_gateway.get_gateway(payment.payment_method).refund(payment.gateway_reference, amount)
+            result = payment_gateway.get_gateway(payment.payment_method).refund(
+                payment.gateway_reference, amount
+            )
         except payment_gateway.GatewayError as exc:
-            raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail="Payment gateway unavailable") from exc
+            raise HTTPException(
+                status.HTTP_502_BAD_GATEWAY, detail="Payment gateway unavailable"
+            ) from exc
         if not result.approved:
             raise HTTPException(
                 status.HTTP_502_BAD_GATEWAY,
-                detail=result.failure_reason or "Refund was declined by the payment gateway",
+                detail=result.failure_reason
+                or "Refund was declined by the payment gateway",
             )
 
     payment.refunded_amount = money(payment.refunded_amount + amount)
@@ -92,7 +101,9 @@ def list_payments(
     skip: int = 0,
     limit: int = 100,
 ):
-    return payment_repository.search(db, sale_id=sale_id, status=status_filter, skip=skip, limit=limit)
+    return payment_repository.search(
+        db, sale_id=sale_id, status=status_filter, skip=skip, limit=limit
+    )
 
 
 payment_service = SimpleNamespace(

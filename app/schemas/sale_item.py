@@ -19,7 +19,9 @@ class SaleItemCreate(BaseModel):
         if (self.product_id is None) == (self.barcode is None):
             raise ValueError("Provide exactly one of product_id or barcode")
         if self.discount_amount is not None and self.discount_percent is not None:
-            raise ValueError("Provide either discount_amount or discount_percent, not both")
+            raise ValueError(
+                "Provide either discount_amount or discount_percent, not both"
+            )
         return self
 
 
@@ -34,7 +36,9 @@ class SaleItemUpdate(BaseModel):
     @model_validator(mode="after")
     def _validate(self):
         if self.discount_amount is not None and self.discount_percent is not None:
-            raise ValueError("Provide either discount_amount or discount_percent, not both")
+            raise ValueError(
+                "Provide either discount_amount or discount_percent, not both"
+            )
         return self
 
 

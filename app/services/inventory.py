@@ -20,13 +20,18 @@ def deduct_for_sale(db: Session, sale: Sale, user: User) -> None:
     if any line cannot be fulfilled; the caller must roll the transaction back.
     """
     for item in sorted(sale.items, key=lambda line: str(line.product_id)):
-        taken = product_repository.adjust_stock(db, item.product_id, -item.quantity, require_active=True)
+        taken = product_repository.adjust_stock(
+            db, item.product_id, -item.quantity, require_active=True
+        )
         if not taken:
             product = product_repository.get(db, item.product_id)
             if product is not None:
                 db.refresh(product)
             if product is None or not product.is_active:
-                raise HTTPException(status.HTTP_409_CONFLICT, detail=f"'{item.product_name}' is no longer available")
+                raise HTTPException(
+                    status.HTTP_409_CONFLICT,
+                    detail=f"'{item.product_name}' is no longer available",
+                )
             raise HTTPException(
                 status.HTTP_409_CONFLICT,
                 detail=(
@@ -86,7 +91,9 @@ def manual_adjustment(
 ) -> Product:
     product = get_or_404(product_repository, db, product_id, "Product")
     if not product_repository.adjust_stock(db, product_id, quantity_change):
-        raise HTTPException(status.HTTP_409_CONFLICT, detail="Adjustment would make stock negative")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, detail="Adjustment would make stock negative"
+        )
     inventory_movement_repository.record(
         db,
         product_id=product_id,
@@ -100,6 +107,10 @@ def manual_adjustment(
     return product
 
 
-def list_movements(db: Session, product_id: uuid.UUID, *, skip: int = 0, limit: int = 100):
+def list_movements(
+    db: Session, product_id: uuid.UUID, *, skip: int = 0, limit: int = 100
+):
     get_or_404(product_repository, db, product_id, "Product")
-    return inventory_movement_repository.list_for_product(db, product_id, skip=skip, limit=limit)
+    return inventory_movement_repository.list_for_product(
+        db, product_id, skip=skip, limit=limit
+    )

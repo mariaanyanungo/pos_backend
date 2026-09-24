@@ -3,7 +3,11 @@ import os
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["JWT_SECRET"] = "pytest-only-secret-key-0123456789-abcdefghijklmnop"
 os.environ["PRICES_INCLUDE_TAX"] = "false"
-for _name in ("BOOTSTRAP_ADMIN_USERNAME", "BOOTSTRAP_ADMIN_EMAIL", "BOOTSTRAP_ADMIN_PASSWORD"):
+for _name in (
+    "BOOTSTRAP_ADMIN_USERNAME",
+    "BOOTSTRAP_ADMIN_EMAIL",
+    "BOOTSTRAP_ADMIN_PASSWORD",
+):
     os.environ.pop(_name, None)
 
 import pytest
@@ -135,7 +139,9 @@ def other_cashier_headers(db_session):
 
 @pytest.fixture
 def category(client, admin_headers):
-    response = client.post("/categories", json={"name": "Beverages"}, headers=admin_headers)
+    response = client.post(
+        "/categories", json={"name": "Beverages"}, headers=admin_headers
+    )
     assert response.status_code == 201, response.text
     return response.json()
 
@@ -164,7 +170,6 @@ def make_product(client, admin_headers, category):
     return _make
 
 
-
 class PosApi:
     """Thin helper around the till workflow, bound to one set of credentials."""
 
@@ -174,7 +179,9 @@ class PosApi:
         self._keys = 0
 
     def new_sale(self, headers=None, **body):
-        response = self.client.post("/sales", json=body, headers=headers or self.headers)
+        response = self.client.post(
+            "/sales", json=body, headers=headers or self.headers
+        )
         assert response.status_code == 201, response.text
         return response.json()
 
@@ -210,7 +217,9 @@ class PosApi:
         sale = self.new_sale()
         self.add_item(sale["sale_id"], product_id, quantity, **item_extra)
         cart = self.get_sale(sale["sale_id"])
-        response = self.checkout(sale["sale_id"], "cash", tendered=str(cart["total_amount"]))
+        response = self.checkout(
+            sale["sale_id"], "cash", tendered=str(cart["total_amount"])
+        )
         assert response.status_code == 201, response.text
         return response.json()
 

@@ -56,7 +56,9 @@ def get_user_from_token(db: Session, token: str) -> User:
     if user is None:
         raise credentials_error
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive"
+        )
     return user
 
 
@@ -76,4 +78,4 @@ def bootstrap_admin(db: Session) -> User | None:
         title="Administrator",
         role=UserRole.ADMIN,
     )
-    return user_service.create_user(db, payload)       
+    return user_service.create_user(db, payload)

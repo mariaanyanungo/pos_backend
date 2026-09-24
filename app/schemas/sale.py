@@ -38,7 +38,9 @@ class CheckoutRequest(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
     payment_method: PaymentMethod
-    amount_tendered: Annotated[Decimal, Field(ge=0, max_digits=12, decimal_places=2)] | None = None
+    amount_tendered: (
+        Annotated[Decimal, Field(ge=0, max_digits=12, decimal_places=2)] | None
+    ) = None
 
     @model_validator(mode="after")
     def _cash_requires_tender(self):

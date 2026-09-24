@@ -24,15 +24,24 @@ def list_users(
     include_inactive: bool = False,
     db: Session = Depends(get_db),
 ):
-    return user_service.list_users(db, skip=skip, limit=limit, include_inactive=include_inactive)
+    return user_service.list_users(
+        db, skip=skip, limit=limit, include_inactive=include_inactive
+    )
 
 
-@router.get("/{user_id}", response_model=UserRead, dependencies=[Depends(require_admin)])
+@router.get(
+    "/{user_id}", response_model=UserRead, dependencies=[Depends(require_admin)]
+)
 def get_user(user_id: uuid.UUID, db: Session = Depends(get_db)):
     return user_service.get_user(db, user_id)
 
 
-@router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_admin)])
+@router.post(
+    "",
+    response_model=UserRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_admin)],
+)
 def create_user(data: UserCreate, db: Session = Depends(get_db)):
     return user_service.create_user(db, data)
 
@@ -48,34 +57,9 @@ def update_user(
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(user_id: uuid.UUID, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+def delete_user(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
     user_service.delete_user(db, user_id, admin)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

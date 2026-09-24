@@ -25,7 +25,10 @@ def _resolve_product(db: Session, data: SaleItemCreate) -> Product:
     if product is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
     if not product.is_active:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=f"'{product.name}' is not available for sale")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail=f"'{product.name}' is not available for sale",
+        )
     return product
 
 
@@ -44,16 +47,22 @@ def add_item(db: Session, sale_id: uuid.UUID, data: SaleItemCreate, user: User) 
     sale_svc.require_status(sale, SaleStatus.OPEN, _CLOSED_MESSAGE)
     product = _resolve_product(db, data)
 
-    existing = next((line for line in sale.items if line.product_id == product.product_id), None)
+    existing = next(
+        (line for line in sale.items if line.product_id == product.product_id), None
+    )
     wanted = data.quantity + (existing.quantity if existing else 0)
     _check_stock(product, wanted)
 
-    discount_given = data.discount_amount is not None or data.discount_percent is not None
+    discount_given = (
+        data.discount_amount is not None or data.discount_percent is not None
+    )
     if existing is not None:
         existing.quantity = wanted
         if discount_given:
             existing.discount_percent = data.discount_percent
-            existing.discount_amount = data.discount_amount if data.discount_amount is not None else ZERO
+            existing.discount_amount = (
+                data.discount_amount if data.discount_amount is not None else ZERO
+            )
     else:
         sale.items.append(
             SaleItem(
@@ -64,7 +73,9 @@ def add_item(db: Session, sale_id: uuid.UUID, data: SaleItemCreate, user: User) 
                 tax_rate=product.tax_rate,
                 quantity=data.quantity,
                 discount_percent=data.discount_percent,
-                discount_amount=data.discount_amount if data.discount_amount is not None else ZERO,
+                discount_amount=data.discount_amount
+                if data.discount_amount is not None
+                else ZERO,
             )
         )
 
@@ -74,7 +85,13 @@ def add_item(db: Session, sale_id: uuid.UUID, data: SaleItemCreate, user: User) 
     return sale
 
 
-def update_item(db: Session, sale_id: uuid.UUID, item_id: uuid.UUID, data: SaleItemUpdate, user: User) -> Sale:
+def update_item(
+    db: Session,
+    sale_id: uuid.UUID,
+    item_id: uuid.UUID,
+    data: SaleItemUpdate,
+    user: User,
+) -> Sale:
     sale = sale_svc.get_sale(db, sale_id, user, for_update=True)
     sale_svc.require_status(sale, SaleStatus.OPEN, _CLOSED_MESSAGE)
     item = _find_item(sale, item_id)
@@ -88,7 +105,9 @@ def update_item(db: Session, sale_id: uuid.UUID, item_id: uuid.UUID, data: SaleI
 
     if "discount_amount" in provided or "discount_percent" in provided:
         item.discount_percent = data.discount_percent
-        item.discount_amount = data.discount_amount if data.discount_amount is not None else ZERO
+        item.discount_amount = (
+            data.discount_amount if data.discount_amount is not None else ZERO
+        )
 
     sale_svc.reprice(sale)
     db.commit()
@@ -96,7 +115,9 @@ def update_item(db: Session, sale_id: uuid.UUID, item_id: uuid.UUID, data: SaleI
     return sale
 
 
-def remove_item(db: Session, sale_id: uuid.UUID, item_id: uuid.UUID, user: User) -> Sale:
+def remove_item(
+    db: Session, sale_id: uuid.UUID, item_id: uuid.UUID, user: User
+) -> Sale:
     sale = sale_svc.get_sale(db, sale_id, user, for_update=True)
     sale_svc.require_status(sale, SaleStatus.OPEN, _CLOSED_MESSAGE)
     item = _find_item(sale, item_id)

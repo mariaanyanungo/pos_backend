@@ -15,12 +15,17 @@ def test_money_rounds_half_up_not_bankers():
     assert money("0.035") == D("0.04")
     assert money("2.675") == D("2.68")
     assert money(1) == D("1.00")
-    assert money(0.1 + 0.2) == D("0.30") 
+    assert money(0.1 + 0.2) == D("0.30")
 
 
 def test_line_without_tax_or_discount():
     line = calculate_line("4.50", 4, "0")
-    assert (line.gross, line.discount, line.tax, line.total) == (D("18.00"), D("0.00"), D("0.00"), D("18.00"))
+    assert (line.gross, line.discount, line.tax, line.total) == (
+        D("18.00"),
+        D("0.00"),
+        D("0.00"),
+        D("18.00"),
+    )
 
 
 def test_line_tax_exclusive():
@@ -54,7 +59,12 @@ def test_line_tax_inclusive_rounding():
 
 def test_fixed_discount_reduces_taxable_amount():
     line = calculate_line("50.00", 2, "8.50", discount_amount="10.00")
-    assert (line.gross, line.discount, line.tax, line.total) == (D("100.00"), D("10.00"), D("7.65"), D("97.65"))
+    assert (line.gross, line.discount, line.tax, line.total) == (
+        D("100.00"),
+        D("10.00"),
+        D("7.65"),
+        D("97.65"),
+    )
 
 
 def test_percent_discount_rounds_half_up():
@@ -86,7 +96,9 @@ def test_invalid_input_is_rejected(kwargs):
     args = {"unit_price": "10.00", "tax_rate": "0"}
     args.update(kwargs)
     with pytest.raises(PricingError):
-        calculate_line(args.pop("unit_price"), args.pop("quantity"), args.pop("tax_rate"), **args)
+        calculate_line(
+            args.pop("unit_price"), args.pop("quantity"), args.pop("tax_rate"), **args
+        )
 
 
 def _item(price, qty, tax="0", percent=None, amount="0.00"):
@@ -105,7 +117,11 @@ def _item(price, qty, tax="0", percent=None, amount="0.00"):
 def test_recalculate_sale_totals_add_up_exactly():
     sale = SimpleNamespace(
         prices_include_tax=False,
-        items=[_item("0.99", 3, "7"), _item("19.99", 1, "0", percent="15"), _item("10.00", 2, "20", amount="1.00")],
+        items=[
+            _item("0.99", 3, "7"),
+            _item("19.99", 1, "0", percent="15"),
+            _item("10.00", 2, "20", amount="1.00"),
+        ],
         subtotal=None,
         discount_total=None,
         tax_total=None,
@@ -130,7 +146,11 @@ def test_recalculate_sale_inclusive_total_excludes_added_tax():
         total_amount=None,
     )
     pricing.recalculate_sale(sale)
-    assert (sale.subtotal, sale.tax_total, sale.total_amount) == (D("12.00"), D("2.00"), D("12.00"))
+    assert (sale.subtotal, sale.tax_total, sale.total_amount) == (
+        D("12.00"),
+        D("2.00"),
+        D("12.00"),
+    )
 
 
 def test_percent_mode_discount_follows_quantity_changes():
@@ -164,6 +184,10 @@ def test_refund_amounts_add_up_to_the_line_total_exactly():
 
 def test_refund_of_all_units_at_once_is_the_whole_line():
     amount = refund_amount_for_units(
-        line_total=D("10.00"), quantity=3, units_already_returned=0, amount_already_refunded=D("0.00"), units=3
+        line_total=D("10.00"),
+        quantity=3,
+        units_already_returned=0,
+        amount_already_refunded=D("0.00"),
+        units=3,
     )
     assert amount == D("10.00")

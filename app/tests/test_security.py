@@ -49,7 +49,9 @@ def test_expired_token_is_rejected():
 
 
 def test_token_signed_with_other_secret_is_rejected():
-    forged = jwt.encode({"sub": str(uuid.uuid4()), "exp": 9999999999}, "x" * 40, algorithm="HS256")
+    forged = jwt.encode(
+        {"sub": str(uuid.uuid4()), "exp": 9999999999}, "x" * 40, algorithm="HS256"
+    )
     with pytest.raises(jwt.InvalidSignatureError):
         decode_access_token(forged)
 
@@ -62,13 +64,17 @@ def test_tampered_token_is_rejected():
 
 
 def test_unsigned_alg_none_token_is_rejected():
-    token = jwt.encode({"sub": str(uuid.uuid4()), "exp": 9999999999}, key=None, algorithm="none")
+    token = jwt.encode(
+        {"sub": str(uuid.uuid4()), "exp": 9999999999}, key=None, algorithm="none"
+    )
     with pytest.raises(jwt.PyJWTError):
         decode_access_token(token)
 
 
 def test_token_without_subject_is_rejected():
-    token = jwt.encode({"exp": 9999999999}, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+    token = jwt.encode(
+        {"exp": 9999999999}, settings.jwt_secret, algorithm=settings.jwt_algorithm
+    )
     with pytest.raises(jwt.MissingRequiredClaimError):
         decode_access_token(token)
 

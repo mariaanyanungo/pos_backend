@@ -10,7 +10,9 @@ from database import get_db
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+def get_current_user(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+) -> User:
     return get_user_from_token(db, token)
 
 
@@ -20,7 +22,9 @@ def require_roles(*roles: UserRole):
 
     def checker(user: User = Depends(get_current_user)) -> User:
         if user.role not in allowed:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+            )
         return user
 
     return checker

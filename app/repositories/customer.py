@@ -1,5 +1,3 @@
-
-
 from app.models.customer import Customer
 from app.repositories.base import BaseRepository
 

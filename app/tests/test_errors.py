@@ -83,11 +83,17 @@ def test_other_errors_do_not_send_a_challenge_header(error_class):
 
 def test_error_extra_fields_are_included_in_the_body():
     response = make_client(DomainError("Nope", extra={"field": "price"})).get("/boom")
-    assert response.json() == {"detail": "Nope", "code": "domain_error", "field": "price"}
+    assert response.json() == {
+        "detail": "Nope",
+        "code": "domain_error",
+        "field": "price",
+    }
 
 
 def test_invalid_transition_error_with_enums():
-    error = InvalidTransitionError("payment", PaymentStatus.CAPTURED, PaymentStatus.PENDING)
+    error = InvalidTransitionError(
+        "payment", PaymentStatus.CAPTURED, PaymentStatus.PENDING
+    )
     response = make_client(error).get("/boom")
     assert response.status_code == 409
     assert response.json() == {

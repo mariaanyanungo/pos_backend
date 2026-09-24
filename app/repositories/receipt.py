@@ -1,4 +1,3 @@
-
 import uuid
 
 from sqlalchemy import select
@@ -16,7 +15,9 @@ class ReceiptRepository(BaseRepository[Receipt]):
         return db.scalar(select(Receipt).where(Receipt.sale_id == sale_id))
 
     def get_by_number(self, db: Session, receipt_number: str) -> Receipt | None:
-        return db.scalar(select(Receipt).where(Receipt.receipt_number == receipt_number))
+        return db.scalar(
+            select(Receipt).where(Receipt.receipt_number == receipt_number)
+        )
 
 
 receipt_repository = ReceiptRepository()

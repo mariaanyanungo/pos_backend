@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-import app.models  
+import app.models
 from app.routers import (
     auth,
     category,

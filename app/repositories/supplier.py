@@ -1,4 +1,3 @@
-
 from app.models.supplier import Supplier
 from app.repositories.base import BaseRepository
 
